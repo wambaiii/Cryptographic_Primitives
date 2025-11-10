@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Encrypted Files — Crypto Demo App</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+    th, td {
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 10px;
+      text-align: center;
+      color: var(--white);
+    }
+    th {
+      background: rgba(255,255,255,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay"></div>
+  <div class="container">
+    <div class="card">
+      <h1>🗂️ Encrypted Files</h1>
+      <p>View, download, or decrypt your encrypted files</p>
+
+      {% if files %}
+        <table>
+          <thead>
+            <tr>
+              <th>Filename</th>
+              <th>Encryption Type</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for f in files %}
+            <tr>
+              <td>{{ f.name }}</td>
+              <td>{{ f.method }}</td>
+              <td>
+                <a href="{{ url_for('download_file', filename=f.name) }}" class="btn">Download</a>
+                <a href="{{ url_for('decrypt_file', filename=f.name) }}" class="btn">Decrypt</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p>No encrypted files found.</p>
+      {% endif %}
+
+      <div style="margin-top:20px;">
+        <a href="{{ url_for('home') }}" class="btn">⬅ Back to Home</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

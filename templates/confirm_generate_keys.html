@@ -1,0 +1,16 @@
+<!-- templates/confirm_generate_keys.html -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><link rel="stylesheet" href="{{ url_for('static','style.css') }}"></head>
+<body>
+  <div class="page card">
+    <h2>Generate RSA Keypair</h2>
+    <p>Click the button below to generate a fresh RSA key pair (2048-bit). Keys will be stored on the server in the <code>keys/</code> folder.</p>
+    <form action="{{ url_for('generate_keys') }}" method="post">
+      <button class="btn small-btn" type="submit">Generate Keys Now</button>
+      <a href="{{ url_for('home') }}" class="btn">← Back</a>
+      <a class="btn small-btn" href="{{ url_for('dashboard') }}">Cancel</a>
+    </form>
+  </div>
+</body>
+</html>

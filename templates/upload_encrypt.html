@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Upload & Encrypt — Crypto Demo App</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="overlay"></div>
+  <div class="container">
+    <div class="card">
+      <h1>🔒 Upload & Encrypt</h1>
+      <p>Choose a file and encryption method (AES or RSA)</p>
+
+      <form action="{{ url_for('upload_encrypt') }}" method="POST" enctype="multipart/form-data" class="form">
+        <label for="file">Select File:</label>
+        <input type="file" id="file" name="file" required>
+
+        <label for="method">Encryption Method:</label>
+        <select id="method" name="method" required style="width:92%; padding:12px; border-radius:8px; background:transparent; border:2px solid var(--white); color:var(--white);">
+          <option value="aes">AES Encryption</option>
+          <option value="rsa">RSA Encryption</option>
+        </select>
+
+        <button type="submit" class="btn">Encrypt & Upload</button>
+      </form>
+
+      <div style="margin-top:20px;">
+        <a href="{{ url_for('home') }}" class="btn">⬅ Back to Home</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

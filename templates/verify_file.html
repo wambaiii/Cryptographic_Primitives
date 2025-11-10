@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Verify File Integrity</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="page">
+    <h1>Verify Integrity</h1>
+
+    <form method="post" enctype="multipart/form-data">
+      <label>Choose file to verify:</label><br>
+      <input type="file" name="file" required><br><br>
+
+      <label>Or paste an expected hex digest (leave blank to use saved file)</label><br>
+      <textarea name="hex_digest" rows="2" style="width:100%"></textarea><br><br>
+
+      <label>Or specify path to a saved .sha256 file (relative to project)</label><br>
+      <input type="text" name="saved_hash_path" style="width:100%" placeholder="uploads/hash_inputs/example.txt.sha256"><br><br>
+
+      <button class="btn" type="submit">Verify</button>
+    </form>
+
+    {% if result %}
+      <h3>Verification result</h3>
+      <p>Expected hex: <code>{{ result.expected }}</code></p>
+      <p>Status: <strong>{{ "MATCH" if result.ok else "MISMATCH" }}</strong></p>
+    {% endif %}
+
+    <p><a href="{{ url_for('home') }}" class="btn">← Back</a></p>
+  </div>
+</body>
+</html>

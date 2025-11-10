@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Compute SHA-256</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="page">
+    <h1>Compute & Save SHA-256</h1>
+    <form method="post" enctype="multipart/form-data">
+      <input type="file" name="file" required>
+      <button class="btn" type="submit">Compute Hash</button>
+    </form>
+
+    {% if result %}
+      <h3>Result for {{ result.filename }}</h3>
+      <p><strong>Hex:</strong> <code>{{ result.hex }}</code></p>
+      <p><strong>Base64:</strong> <code>{{ result.b64 }}</code></p>
+      <p>Saved as: {{ result.hash_file }}</p>
+    {% endif %}
+
+    <p><a href="{{ url_for('home') }}" class="btn">← Back</a></p>
+  </div>
+</body>
+</html>

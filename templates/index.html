@@ -2,22 +2,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Home - Bcrypt Demo App</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta charset="utf-8" />
+  <title>Crypto Demo App — Authentication · Integrity · Encryption</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
-    <div class="container">
-        <h1>🔐 Welcome to the Bcrypt Security App</h1>
-        <p>Choose what you'd like to do:</p>
+  <div class="page">
+    <header class="site-header">
+      <h1 class="app-title">🔐 The Awesomest Crypto Demo App</h1>
+      <p class="subtitle">Bcrypt authentication — SHA-256 fingerprints — AES/RSA file encryption</p>
+    </header>
 
-        <div>
-            <a href="{{ url_for('register') }}" class="btn">Register</a>
-            <a href="{{ url_for('login') }}" class="btn">Login</a>
-            <a href="{{ url_for('demo_hashes') }}" class="btn">Demo Hashes</a>
-            <a href="{{ url_for('demo_bruteforce') }}" class="btn">Demo Brute Force</a>
-            <a href="{{ url_for('analyze') }}" class="btn">Analyze Hash</a>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flashes">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
         </div>
-    </div>
+      {% endif %}
+    {% endwith %}
+
+    <main class="buttons-grid">
+
+      <!-- Row 1: Member 1 (Authentication & bcrypt) -->
+      <section class="row">
+        <h2>Authentication (bcrypt)</h2>
+        <div class="btn-row">
+          <a class="btn small-btn" href="{{ url_for('register') }}">Register</a>
+          <a class="btn small-btn" href="{{ url_for('login') }}">Login</a>
+          <a class="btn small-btn" href="{{ url_for('demo_hashes') }}">Demo Hashes</a>
+          <a class="btn small-btn" href="{{ url_for('demo_bruteforce') }}">Demo Brute Force</a>
+          <a class="btn small-btn" href="{{ url_for('analyze') }}">Analyze Hash</a>
+        </div>
+      </section>
+
+      <!-- Row 2: Member 2 (File hashing & fingerprints) -->
+      <section class="row">
+        <h2>File Fingerprinting (SHA-256)</h2>
+        <div class="btn-row">
+          <a class="btn small-btn" href="{{ url_for('hash_file') }}">Compute & Save Hash</a>
+          <a class="btn small-btn" href="{{ url_for('verify_file') }}">Verify Integrity</a>
+          <a class="btn small-btn" href="{{ url_for('fingerprint') }}">Generate Fingerprint (QR)</a>
+        </div>
+      </section>
+
+      <!-- Row 3: Member 3 (Encryption & Key Management) -->
+      <section class="row">
+        <h2>Encryption (AES & RSA)</h2>
+        <div class="btn-row">
+          <form action="{{ url_for('generate_keys') }}" method="post" style="display:inline;">
+  <button type="submit" class="btn small-btn">Generate RSA Keys</button>
+</form>
+          <a class="btn small-btn" href="{{ url_for('upload_encrypt') }}">Upload & Encrypt</a>
+          <a class="btn small-btn" href="{{ url_for('files') }}">View / Decrypt Files</a>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="site-footer">
+      <small>Demo only — do not use secrets or store private keys unprotected in production.</small>
+    </footer>
+  </div>
 </body>
 </html>

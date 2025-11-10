@@ -116,14 +116,14 @@ a:hover {
 
 .btn {
   display: inline-block;
-  width: 90%;
-  max-width: 360px;
-  padding: 14px 18px;
-  border-radius: 10px;
+  width: 75%;
+  max-width: 280px;
+  padding: 10px 14px;
+  border-radius: 8px;
   background: linear-gradient(180deg, var(--purple), var(--purple-contrast));
   color: var(--white);
-  font-weight: 700;
-  font-size: 16px;
+  font-weight: 600;
+  font-size: 14px;
   border: none;
   cursor: pointer;
   text-decoration: none;
@@ -132,8 +132,8 @@ a:hover {
 }
 
 .btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(147,51,255,0.18);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(147,51,255,0.25);
 }
 
 /* form inputs for register/login/demo/analyze */
@@ -186,4 +186,95 @@ label {
   display: block;
   width: 92%;
   margin: 6px 0 4px;
+}
+
+/* === HOMEPAGE GRID LAYOUT FIX === */
+
+.page {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.site-header {
+  margin-bottom: 1.5rem;
+}
+
+.site-header h1 {
+  color: var(--purple);
+  font-size: 2rem;
+  margin-bottom: 0.3rem;
+}
+
+.subtitle {
+  color: var(--white);
+  font-size: 1rem;
+  opacity: 0.85;
+}
+
+.buttons-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 900px;
+}
+
+.row {
+  background: var(--card-bg);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.row h2 {
+  color: var(--white);
+  font-size: 1.2rem;
+  margin-bottom: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Buttons arranged neatly in each row */
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Smaller, neater buttons */
+.btn {
+  display: inline-block;
+  width: auto;
+  min-width: 150px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--purple), var(--purple-contrast));
+  color: var(--white);
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+  transition: transform .08s ease, box-shadow .12s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(147, 51, 255, 0.25);
+}
+
+.site-footer {
+  margin-top: 2rem;
+  color: var(--white);
+  opacity: 0.6;
+  font-size: 0.85rem;
 }

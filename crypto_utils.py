@@ -1,83 +1,238 @@
-from Crypto.Cipher import AES, PKCS1_OAEP
-from Crypto.PublicKey import RSA
-from Crypto.Random import get_random_bytes
+# crypto_utils.py
 import os
+from typing import Tuple
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import AES, PKCS1_OAEP
+from Crypto.Random import get_random_bytes
+from Crypto.Hash import SHA256
 
-# AES + RSA Encryption System
-def encrypt_file(file_path, public_key_path="keys/rsa_public.pem"):
-    # Load RSA public key
-    with open(public_key_path, "rb") as key_file:
-        public_key = RSA.import_key(key_file.read())
+# Directories (adjust if needed)
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+KEYS_DIR = os.path.join(BASE_DIR, "keys")
+UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
+ENCRYPTED_DIR = os.path.join(UPLOADS_DIR, "encrypted_files")
+DECRYPTED_DIR = os.path.join(UPLOADS_DIR, "decrypted_files")
+ORIGINAL_DIR = os.path.join(UPLOADS_DIR, "original")
+AESKEYS_DIR = os.path.join(UPLOADS_DIR, "aes_keys")  # stores encrypted AES keys
 
-    # Generate AES key and IV
-    aes_key = get_random_bytes(32)  # 256-bit key
-    iv = get_random_bytes(16)
+# Ensure directories exist
+for d in (KEYS_DIR, UPLOADS_DIR, ENCRYPTED_DIR, DECRYPTED_DIR, ORIGINAL_DIR, AESKEYS_DIR):
+    os.makedirs(d, exist_ok=True)
 
-    # Encrypt the AES key using RSA
-    cipher_rsa = PKCS1_OAEP.new(public_key)
-    enc_aes_key = cipher_rsa.encrypt(aes_key)
 
-    # Encrypt file data with AES
-    cipher_aes = AES.new(aes_key, AES.MODE_CBC, iv)
-    with open(file_path, "rb") as f:
-        plaintext = f.read()
+# -----------------------------
+# RSA Key generation / loading
+# -----------------------------
+def generate_rsa_keypair(bits: int = 2048, pub_name: str = "rsa_public.pem", priv_name: str = "rsa_private.pem") -> Tuple[str, str]:
+    """
+    Generate RSA keypair and save to keys/ directory.
+    Returns (pub_path, priv_path).
+    """
+    key = RSA.generate(bits)
+    private_key = key.export_key(pkcs=8)  # PKCS#8 format
+    public_key = key.publickey().export_key()
 
-    # Padding for AES block size (16 bytes)
-    pad_len = 16 - len(plaintext) % 16
-    plaintext += bytes([pad_len]) * pad_len
-    ciphertext = cipher_aes.encrypt(plaintext)
+    priv_path = os.path.join(KEYS_DIR, priv_name)
+    pub_path = os.path.join(KEYS_DIR, pub_name)
 
-    # Save encrypted file with IV prepended
-    filename = os.path.basename(file_path)
-    enc_file_path = f"uploads/encrypted_files/{filename}.enc"
-    with open(enc_file_path, "wb") as f:
-        f.write(iv + ciphertext)
+    with open(priv_path, "wb") as f:
+        f.write(private_key)
+    with open(pub_path, "wb") as f:
+        f.write(public_key)
 
-    # Save encrypted AES key
-    with open(f"uploads/encrypted_files/{filename}.key", "wb") as f:
-        f.write(enc_aes_key)
+    return pub_path, priv_path
 
-    print(f"File '{filename}' encrypted successfully.")
-    print(f"→ Encrypted file: {enc_file_path}")
-    print(f"→ Encrypted AES key saved.")
 
-    return enc_file_path, f"uploads/encrypted_files/{filename}.key"
+def load_rsa_public_key(pub_path: str = None) -> RSA.RsaKey:
+    p = pub_path or os.path.join(KEYS_DIR, "rsa_public.pem")
+    with open(p, "rb") as f:
+        return RSA.import_key(f.read())
 
-def decrypt_file(enc_file_path, enc_key_path, private_key_path="keys/rsa_private.pem"):
-    # Load RSA private key
-    with open(private_key_path, "rb") as key_file:
-        private_key = RSA.import_key(key_file.read())
 
-    # Decrypt AES key
-    with open(enc_key_path, "rb") as f:
-        enc_aes_key = f.read()
-    cipher_rsa = PKCS1_OAEP.new(private_key)
-    aes_key = cipher_rsa.decrypt(enc_aes_key)
+def load_rsa_private_key(priv_path: str = None) -> RSA.RsaKey:
+    p = priv_path or os.path.join(KEYS_DIR, "rsa_private.pem")
+    with open(p, "rb") as f:
+        return RSA.import_key(f.read())
 
-    # Read encrypted file and extract IV
-    with open(enc_file_path, "rb") as f:
-        iv = f.read(16)
+
+# -------------------------------------
+# AES key / IV generation (AES-256 GCM)
+# -------------------------------------
+def generate_aes_key() -> bytes:
+    """Return a 32-byte AES-256 key."""
+    return get_random_bytes(32)
+
+
+def generate_aes_nonce() -> bytes:
+    """Return a recommended 12-byte nonce for GCM."""
+    return get_random_bytes(12)
+
+
+# -----------------------
+# SHA-256 file fingerprint
+# -----------------------
+def sha256_file(path: str) -> str:
+    """
+    Compute SHA-256 hex digest of file at path.
+    Returns hex string.
+    """
+    h = SHA256.new()
+    with open(path, "rb") as f:
+        while True:
+            chunk = f.read(8192)
+            if not chunk:
+                break
+            h.update(chunk)
+    return h.hexdigest()
+
+
+# ----------------------------
+# Encrypt AES key with RSA OAEP
+# ----------------------------
+def encrypt_aes_key_with_rsa(aes_key: bytes, pub_path: str = None) -> bytes:
+    pub = load_rsa_public_key(pub_path)
+    cipher_rsa = PKCS1_OAEP.new(pub, hashAlgo=SHA256)
+    enc_key = cipher_rsa.encrypt(aes_key)
+    return enc_key
+
+
+def decrypt_aes_key_with_rsa(enc_key: bytes, priv_path: str = None) -> bytes:
+    priv = load_rsa_private_key(priv_path)
+    cipher_rsa = PKCS1_OAEP.new(priv, hashAlgo=SHA256)
+    aes_key = cipher_rsa.decrypt(enc_key)
+    return aes_key
+
+
+# ---------------------------------
+# Encrypt / decrypt files with AES
+# Using AES-GCM: stored format -> nonce||tag||ciphertext
+# ---------------------------------
+def encrypt_file_aes_gcm(input_path: str, output_path: str, aes_key: bytes) -> Tuple[bytes, int]:
+    """
+    Encrypt input_path -> output_path using AES-GCM.
+    Returns (nonce, total_bytes_written).
+    Stored layout in output file: 12-byte nonce | 16-byte tag | ciphertext
+    """
+    nonce = generate_aes_nonce()
+    cipher = AES.new(aes_key, AES.MODE_GCM, nonce=nonce)
+    total_written = 0
+    with open(input_path, "rb") as f_in:
+        plaintext = f_in.read()
+    ciphertext, tag = cipher.encrypt_and_digest(plaintext)
+
+    with open(output_path, "wb") as f_out:
+        f_out.write(nonce)
+        f_out.write(tag)
+        f_out.write(ciphertext)
+        total_written = len(nonce) + len(tag) + len(ciphertext)
+
+    return nonce, total_written
+
+
+def decrypt_file_aes_gcm(encrypted_path: str, output_path: str, aes_key: bytes) -> None:
+    """
+    Decrypt file written as nonce|tag|ciphertext and write plaintext to output_path.
+    Raises ValueError if tag check fails.
+    """
+    with open(encrypted_path, "rb") as f:
+        nonce = f.read(12)
+        tag = f.read(16)
         ciphertext = f.read()
 
-    # AES decryption
-    cipher_aes = AES.new(aes_key, AES.MODE_CBC, iv)
-    plaintext_padded = cipher_aes.decrypt(ciphertext)
+    cipher = AES.new(aes_key, AES.MODE_GCM, nonce=nonce)
+    plaintext = cipher.decrypt_and_verify(ciphertext, tag)
 
-    # Remove padding
-    pad_len = plaintext_padded[-1]
-    plaintext = plaintext_padded[:-pad_len]
+    with open(output_path, "wb") as f_out:
+        f_out.write(plaintext)
 
-    # Save decrypted file
-    filename = os.path.basename(enc_file_path).replace(".enc", "")
-    dec_file_path = f"uploads/decrypted_files/{filename}"
-    with open(dec_file_path, "wb") as f:
-        f.write(plaintext)
 
-    print(f"File '{filename}' decrypted successfully.")
-    print(f"→ Decrypted file: {dec_file_path}")
+# ----------------------------
+# High-level helpers for Flask
+# ----------------------------
+def handle_upload_and_encrypt(file_storage, filename: str = None) -> dict:
+    """
+    Given a Werkzeug FileStorage (from Flask request.files['file']),
+    saves original file, computes SHA-256, encrypts file with AES-256-GCM,
+    encrypts AES key with RSA public key, and writes artifacts to uploads/.
+    Returns metadata dict with paths and hash.
+    """
+    if filename is None:
+        filename = file_storage.filename
 
-    return dec_file_path
+    # Save original
+    original_path = os.path.join(ORIGINAL_DIR, filename)
+    file_storage.save(original_path)
 
-from tqdm import tqdm
-for i in tqdm(range(100), desc="Encrypting..."):
-    pass
+    # Compute SHA-256 of original
+    fingerprint = sha256_file(original_path)
+
+    # Generate AES key and encrypt file
+    aes_key = generate_aes_key()
+    encrypted_filename = filename + ".enc"
+    encrypted_path = os.path.join(ENCRYPTED_DIR, encrypted_filename)
+    nonce, size = encrypt_file_aes_gcm(original_path, encrypted_path, aes_key)
+
+    # Encrypt AES key with RSA public key
+    enc_aes_key = encrypt_aes_key_with_rsa(aes_key)
+    aes_key_file = os.path.join(AESKEYS_DIR, filename + ".key.enc")
+    with open(aes_key_file, "wb") as kf:
+        kf.write(enc_aes_key)
+
+    # Metadata to store (e.g., DB row or JSON)
+    meta = {
+        "original_path": original_path,
+        "fingerprint_sha256": fingerprint,
+        "encrypted_path": encrypted_path,
+        "aes_key_encrypted_path": aes_key_file,
+        "nonce_bytes": len(nonce),
+        "encrypted_size": size,
+        "filename": filename,
+        "encrypted_filename": encrypted_filename,
+    }
+    return meta
+
+
+def handle_decrypt_and_verify(filename: str, priv_path: str = None) -> dict:
+    """
+    Given original filename (as uploaded), find encrypted file and AES key,
+    decrypt AES key with RSA private key, decrypt file, compute hash and compare.
+    Returns metadata including verification result and path to decrypted file.
+    """
+    encrypted_path = os.path.join(ENCRYPTED_DIR, filename + ".enc")
+    aes_key_file = os.path.join(AESKEYS_DIR, filename + ".key.enc")
+    if not os.path.exists(encrypted_path) or not os.path.exists(aes_key_file):
+        raise FileNotFoundError("Encrypted file or encrypted AES key not found.")
+
+    # Read encrypted AES key and decrypt with RSA private key
+    with open(aes_key_file, "rb") as f:
+        enc_aes_key = f.read()
+
+    aes_key = decrypt_aes_key_with_rsa(enc_aes_key, priv_path)
+
+    # Decrypt file to decrypted_files/<filename>
+    decrypted_path = os.path.join(DECRYPTED_DIR, filename + ".dec")
+    decrypt_file_aes_gcm(encrypted_path, decrypted_path, aes_key)
+
+    # Compute SHA-256 of decrypted and of original (if original exists)
+    decrypted_hash = sha256_file(decrypted_path)
+    original_path = os.path.join(ORIGINAL_DIR, filename)
+    original_hash = sha256_file(original_path) if os.path.exists(original_path) else None
+
+    verified = (original_hash is not None and original_hash == decrypted_hash)
+
+    return {
+        "decrypted_path": decrypted_path,
+        "original_hash": original_hash,
+        "decrypted_hash": decrypted_hash,
+        "verified": verified,
+    }
+
+
+# Utility: list encrypted files (simple)
+def list_encrypted_files():
+    out = []
+    for fname in os.listdir(ENCRYPTED_DIR):
+        if fname.endswith(".enc"):
+            # filename without .enc
+            out.append(fname[:-4])
+    return out

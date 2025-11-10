@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Generate Fingerprint (QR)</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="page">
+    <h1>Generate Fingerprint (QR)</h1>
+
+    <form method="post" enctype="multipart/form-data">
+      <label>Paste hex digest</label><br>
+      <textarea name="hex_digest" rows="3" style="width:100%"></textarea><br><br>
+
+      <label>Or upload a file (we'll hash it first)</label><br>
+      <input type="file" name="file"><br><br>
+
+      <button class="btn" type="submit">Generate QR</button>
+    </form>
+
+    {% if qr_path %}
+      <h3>QR Fingerprint</h3>
+      <img src="{{ qr_path }}" alt="Fingerprint QR" style="max-width:320px;border:1px solid #ddd;padding:8px;border-radius:8px;">
+    {% endif %}
+
+    <p><a href="{{ url_for('home') }}" class="btn">← Back</a></p>
+  </div>
+</body>
+</html>
