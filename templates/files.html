@@ -28,31 +28,17 @@
       <h1>🗂️ Encrypted Files</h1>
       <p>View, download, or decrypt your encrypted files</p>
 
-      {% if files %}
-        <table>
-          <thead>
-            <tr>
-              <th>Filename</th>
-              <th>Encryption Type</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for f in files %}
-            <tr>
-              <td>{{ f.name }}</td>
-              <td>{{ f.method }}</td>
-              <td>
-                <a href="{{ url_for('download_file', filename=f.name) }}" class="btn">Download</a>
-                <a href="{{ url_for('decrypt_file', filename=f.name) }}" class="btn">Decrypt</a>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      {% else %}
-        <p>No encrypted files found.</p>
-      {% endif %}
+      {% for f in files %}
+<tr>
+    <td>{{ f.name }}</td>
+    <td>{{ f.method }}</td>
+    <td>
+        <a href="{{ url_for('download_file', filename=f.name + '.enc') }}" class="btn">Download</a>
+        <a href="{{ url_for('decrypt', filename=f.name) }}" class="btn">Decrypt</a>
+    </td>
+</tr>
+{% endfor %}
+
 
       <div style="margin-top:20px;">
         <a href="{{ url_for('home') }}" class="btn">⬅ Back to Home</a>

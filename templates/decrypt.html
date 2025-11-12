@@ -1,0 +1,16 @@
+<h1>🔐 Decrypt File</h1>
+
+<form method="POST" action="{{ url_for('decrypt', filename=filename) }}">
+  <label>Filename:</label>
+  <input type="text" name="filename" value="{{ filename }}" readonly>
+
+  <label>Encryption type:</label>
+  <select name="method">
+    <option value="AES">AES</option>
+    <option value="RSA">RSA</option>
+  </select>
+
+  <button type="submit">Decrypt File</button>
+</form>
+
+<a href="{{ url_for('files') }}">⬅ Back to Files</a>

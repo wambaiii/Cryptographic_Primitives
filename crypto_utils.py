@@ -10,8 +10,8 @@ from Crypto.Hash import SHA256
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 KEYS_DIR = os.path.join(BASE_DIR, "keys")
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
-ENCRYPTED_DIR = os.path.join(UPLOADS_DIR, "encrypted_files")
-DECRYPTED_DIR = os.path.join(UPLOADS_DIR, "decrypted_files")
+ENCRYPTED_DIR = os.path.join(BASE_DIR, 'uploads', "encrypted")
+DECRYPTED_DIR = os.path.join(UPLOADS_DIR, "decrypted")
 ORIGINAL_DIR = os.path.join(UPLOADS_DIR, "original")
 AESKEYS_DIR = os.path.join(UPLOADS_DIR, "aes_keys")  # stores encrypted AES keys
 
@@ -236,3 +236,18 @@ def list_encrypted_files():
             # filename without .enc
             out.append(fname[:-4])
     return out
+
+def list_encrypted_files():
+    out = []
+    for fname in os.listdir(ENCRYPTED_DIR):
+        if fname.endswith(".enc"):
+            out.append({
+                "name": fname[:-4],  # without .enc
+                "method": "AES",     # since only AES is implemented
+            })
+    return out
+
+def list_encrypted_files():
+    files = [f[:-4] for f in os.listdir(ENCRYPTED_DIR) if f.endswith(".enc")]
+    files.sort(key=lambda f: os.path.getmtime(os.path.join(ENCRYPTED_DIR, f + ".enc")), reverse=True)  # newest first
+    return files

@@ -2,6 +2,15 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from hash_utils import comp_sha256, save_hash_to_file, load_hash_from_file, verify_integrity, gen_fingerprint
+from flask import send_from_directory
+from crypto_utils import (
+    generate_rsa_keypair,
+    handle_upload_and_encrypt,
+    handle_decrypt_and_verify,
+    list_encrypted_files,
+    KEYS_DIR,
+    ENCRYPTED_DIR  # <-- add this
+)
 import bcrypt
 import os
 import time
@@ -237,35 +246,46 @@ def files():
     if 'username' not in session:
         flash("Please log in first.", "error")
         return redirect(url_for('login'))
-    files = list_encrypted_files()
-    return render_template('files.html', files=files)
 
+    all_files = list_encrypted_files()  # call the function!
+
+    if not all_files:
+        files_meta = []
+    else:
+        # Sort by modified time in ENCRYPTED_DIR
+        all_files_full_paths = [
+            os.path.join(ENCRYPTED_DIR, f + ".enc") for f in all_files
+        ]
+        latest_file_path = max(all_files_full_paths, key=os.path.getmtime)
+        latest_file = os.path.basename(latest_file_path)[:-4]  # remove .enc
+        files_meta = [{"name": latest_file, "method": "AES"}]  # adjust method if needed
+
+    return render_template('files.html', files=files_meta)
 
 # Decrypt file route (downloads decrypted file)
-@app.route('/decrypt/<filename>', methods=['GET'])
+@app.route('/decrypt/<filename>', methods=['GET', 'POST'])
 def decrypt(filename):
     if 'username' not in session:
         flash("Please log in first.", "error")
         return redirect(url_for('login'))
-    try:
-        result = handle_decrypt_and_verify(filename)
-    except FileNotFoundError:
-        flash("Encrypted file or key not found.", "error")
+
+    if request.method == 'POST':
+        # method selection can be used in the future
+        method = request.form.get('method', 'AES')
+        try:
+            result = handle_decrypt_and_verify(filename)
+            flash(f"Decryption completed. Verified: {result['verified']}. SHA-256: {result['decrypted_hash']}", "success")
+        except FileNotFoundError:
+            flash("Encrypted file or key not found.", "error")
+        except ValueError:
+            flash("Decryption failed or authentication tag mismatch.", "error")
+
         return redirect(url_for('files'))
-    except ValueError as e:
-        flash("Decryption failed or authentication tag mismatch.", "error")
-        return redirect(url_for('files'))
 
-    flash_msg = f"Decryption completed. Integrity verified: {result['verified']}. SHA-256 (decrypted): {result['decrypted_hash']}"
-    flash(flash_msg, "success")
-    # Option: let user download file or show link
-    return redirect(url_for('files'))
+    # GET request → show decrypt page
+    return render_template('decrypt.html', filename=filename)
 
-# Where to store uploaded files for hashing
-HASH_UPLOAD_DIR = os.path.join(BASE_DIR, "uploads", "hash_inputs")
-os.makedirs(HASH_UPLOAD_DIR, exist_ok=True)
 
-# Route: compute & save hash
 @app.route('/hash_file', methods=['GET', 'POST'])
 def hash_file():
     if 'username' not in session:
@@ -386,5 +406,20 @@ def fingerprint():
 
     return render_template('fingerprint.html', qr_path=qr_path)
 
+@app.route('/download/<path:filename>')
+def download_file(filename):
+    if 'username' not in session:
+        flash("Please log in first.", "error")
+        return redirect(url_for('login'))
+
+    encrypted_dir = os.path.join(BASE_DIR, 'uploads', 'encrypted')
+    file_path = os.path.join(encrypted_dir, filename)
+
+    if not os.path.exists(file_path):
+        flash("File not found.", "error")
+        return redirect(url_for('files'))
+
+    # This actually sends the file
+    return send_from_directory(encrypted_dir, filename, as_attachment=True)
 if __name__ == "__main__":
     app.run(debug=True)
